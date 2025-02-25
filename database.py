@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
-from models import db
+from models import db, User
 
 def create_app():
     app = Flask(__name__)
@@ -9,6 +9,6 @@ def create_app():
     db.init_app(app)
     
     with app.app_context():
-        db.create_all()
-    
+        db.create_all()  # Pastikan tabel User dibuat
+
     return app

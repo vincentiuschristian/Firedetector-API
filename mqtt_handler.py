@@ -25,14 +25,14 @@ def on_message(client, userdata, msg):
 
     try:
         data_json = json.loads(msg.payload.decode())  # Parse JSON
-        from app import app  # 🚀 Lazy import untuk menghindari circular import
+        from app import app
 
         with app.app_context():  # Gunakan app hanya di sini
             new_data = SensorData(
-    temperature=data_json.get("temperature"),
-    humidity=data_json.get("humidity"),
-    mq_status=data_json.get("MQ"),  # ✅ Sesuai dengan nama kolom di PostgreSQL
-    flame_status=data_json.get("Flame")  # ✅ Sesuai dengan nama kolom di PostgreSQL
+                temperature=data_json.get("temperature"),
+                humidity=data_json.get("humidity"),
+                mq_status=data_json.get("MQ"),  # ✅ Sesuai dengan nama kolom di PostgreSQL
+                flame_status=data_json.get("Flame")  # ✅ Sesuai dengan nama kolom di PostgreSQL
 )
             db.session.add(new_data)
             db.session.commit()
@@ -47,7 +47,7 @@ def start_mqtt():
     client.username_pw_set(Config.MQTT_USERNAME, Config.MQTT_PASSWORD)
 
     # **PENTING:** Menambahkan TLS/SSL agar bisa konek ke port 8883
-    client.tls_set(cert_reqs=ssl.CERT_NONE)  # Nonaktifkan verifikasi sertifikat
+    client.tls_set(cert_reqs=ssl.CERT_NONE) 
     client.tls_insecure_set(True)
 
     client.on_connect = on_connect
