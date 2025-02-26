@@ -19,21 +19,30 @@ def on_connect(client, userdata, flags, rc):
     else:
         print(f"❌ Failed to connect, return code {rc}")
 
-# Callback ketika menerima pesan
 def on_message(client, userdata, msg):
     print(f"Received message: {msg.payload.decode()} on topic {msg.topic}")
 
     try:
         data_json = json.loads(msg.payload.decode())  # Parse JSON
+        temperature = data_json.get("temperature")
+        humidity = data_json.get("humidity")
+        mq_status = data_json.get("MQ")  # Sesuai dengan nama kolom di PostgreSQL
+        flame_status = data_json.get("Flame")  # Sesuai dengan nama kolom di PostgreSQL
+
+        # Validasi data: Jika temperature atau humidity None, beri nilai default
+        if temperature is None or humidity is None:
+            print("⚠️ Invalid data: Temperature or humidity is None. Data ignored.")
+            return  # Abaikan penyimpanan jika data tidak valid
+
         from app import app
 
         with app.app_context():  # Gunakan app hanya di sini
             new_data = SensorData(
-                temperature=data_json.get("temperature"),
-                humidity=data_json.get("humidity"),
-                mq_status=data_json.get("MQ"),  # ✅ Sesuai dengan nama kolom di PostgreSQL
-                flame_status=data_json.get("Flame")  # ✅ Sesuai dengan nama kolom di PostgreSQL
-)
+                temperature=temperature,
+                humidity=humidity,
+                mq_status=mq_status,
+                flame_status=flame_status
+            )
             db.session.add(new_data)
             db.session.commit()
             print("✅ Data successfully saved to database!")
