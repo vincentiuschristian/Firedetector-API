@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify
 from models import db, User
 import re
+from datetime import datetime, timedelta, timezone
+import jwt
+from flask import current_app
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -52,6 +55,20 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if user and user.check_password(password):
-        return jsonify({"message": "Login berhasil!", "username": user.username, "device_id": user.device_id}), 200
+        # Generate token dengan masa berlaku 6 bulan
+        token = jwt.encode(
+            {
+                "user_id": user.id,
+                "exp": datetime.now(timezone.utc) + timedelta(days=180)   # 6 bulan = 180 hari
+            },
+            current_app.config["SECRET_KEY"],  # Secret key dari konfigurasi Flask
+            algorithm="HS256"
+        )
+        return jsonify({
+            "message": "Login berhasil!",
+            "username": user.username,
+            "device_id": user.device_id,
+            "token": token  # Kirim token ke client
+        }), 200
     else:
         return jsonify({"error": "Email atau password salah!"}), 401

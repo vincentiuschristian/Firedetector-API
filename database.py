@@ -1,14 +1,24 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from config import Config
-from models import db, User
+from dotenv import load_dotenv
+
+# 🔥 Load environment variables dari .env
+load_dotenv()
+
+db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
-    db.init_app(app)
     
-    with app.app_context():
-        db.create_all()  # Pastikan tabel User dibuat
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        raise RuntimeError("DATABASE_URL tidak ditemukan di .env")
+
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback_secret')
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    db.init_app(app) 
 
     return app

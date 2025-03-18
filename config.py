@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Config:
     MQTT_BROKER = "d7d8ee83.ala.asia-southeast1.emqxsl.com"
@@ -8,6 +11,7 @@ class Config:
     MQTT_USERNAME = "firedetect"
     MQTT_PASSWORD = "123"
 
-    # Konfigurasi Database PostgreSQL (ubah jika pakai layanan lain)
-    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:123@localhost:5432/iot_database"
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://postgres:123@localhost:5432/iot_database")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")
