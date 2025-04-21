@@ -66,5 +66,6 @@ def get_sensor_history(current_user):
         return jsonify({"message": "No history data found"}), 404
 
 if __name__ == '__main__':
-    start_mqtt()
+    with app.app_context():
+        start_mqtt()
     app.run(host='0.0.0.0', port=5000, debug=True)

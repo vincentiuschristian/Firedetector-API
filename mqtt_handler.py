@@ -12,6 +12,7 @@ def on_connect(client, userdata, flags, rc):
         print(f"❌ Failed to connect, return code {rc}")
 
 def on_message(client, userdata, msg):
+    from app import app  # Import di dalam fungsi untuk hindari circular import
     print(f"Received message: {msg.payload.decode()} on topic {msg.topic}")
 
     try:
@@ -23,17 +24,19 @@ def on_message(client, userdata, msg):
 
         if temperature is None or humidity is None:
             print("⚠️ Invalid data: Temperature or humidity is None. Data ignored.")
-            return  # Abaikan penyimpanan jika data tidak valid
+            return
 
-        new_data = SensorData(
-            temperature=temperature,
-            humidity=humidity,
-            mq_status=mq_status,
-            flame_status=flame_status
-        )
-        db.session.add(new_data)
-        db.session.commit()
-        print("✅ Data successfully saved to database!")
+        # Masuk ke application context Flask
+        with app.app_context():
+            new_data = SensorData(
+                temperature=temperature,
+                humidity=humidity,
+                mq_status=mq_status,
+                flame_status=flame_status
+            )
+            db.session.add(new_data)
+            db.session.commit()
+            print("✅ Data successfully saved to database!")
     except Exception as e:
         print(f"❌ Error processing MQTT message: {e}")
 
