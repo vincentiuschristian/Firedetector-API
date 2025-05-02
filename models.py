@@ -1,16 +1,26 @@
-from datetime import datetime, timedelta
+from datetime import datetime, UTC
 import jwt
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import db  # 🔥 Gunakan db dari database.py
+from database import db
 
-class SensorData(db.Model):
+class RuangTamuData(db.Model):
+    __tablename__ = 'ruang_tamu'
     id = db.Column(db.Integer, primary_key=True)
-    temperature = db.Column(db.Float, nullable=False)
-    humidity = db.Column(db.Float, nullable=False)
-    mq_status = db.Column(db.String(50), nullable=False)
-    flame_status = db.Column(db.String(50), nullable=False)
-    timestamp = db.Column(db.DateTime, server_default=db.func.now())
+    temperature = db.Column(db.Float)
+    humidity = db.Column(db.Float)
+    mq_status = db.Column(db.String(50))
+    flame_status = db.Column(db.String(50))
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+class KamarData(db.Model):
+    __tablename__ = 'kamar'
+    id = db.Column(db.Integer, primary_key=True)
+    temperature = db.Column(db.Float)
+    humidity = db.Column(db.Float)
+    mq_status = db.Column(db.String(50))
+    flame_status = db.Column(db.String(50))
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)

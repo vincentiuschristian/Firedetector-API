@@ -1,6 +1,8 @@
 from flask import Flask, jsonify
+from models import RuangTamuData, KamarData
+from datetime import datetime
 from database import create_app, db
-from models import SensorData, User
+from models import User
 from mqtt_handler import start_mqtt
 from auth import auth_bp
 from middleware import token_required
@@ -8,7 +10,6 @@ from config import Config
 
 app = create_app()
 
-# 🔥 Pastikan db sudah terikat ke app sebelum digunakan
 with app.app_context():
     db.create_all()
 
@@ -28,11 +29,10 @@ def get_user_profile(current_user):
     else:
         return jsonify({"message": "User tidak ditemukan!"}), 404
 
-@app.route('/api/sensor/latest', methods=['GET'])
+@app.route('/api/ruangtamu/latest', methods=['GET'])
 @token_required
-def get_latest_sensor_data(current_user):
-    latest_data = SensorData.query.order_by(SensorData.id.desc()).first()
-
+def get_latest_ruangtamu(current_user):
+    latest_data = RuangTamuData.query.order_by(RuangTamuData.id.desc()).first()
     if latest_data:
         return jsonify({
             "id": latest_data.id,
@@ -40,30 +40,54 @@ def get_latest_sensor_data(current_user):
             "humidity": latest_data.humidity,
             "mq_status": latest_data.mq_status,
             "flame_status": latest_data.flame_status,
-            "timestamp": latest_data.timestamp.isoformat() if latest_data.timestamp else None
+            "timestamp": latest_data.timestamp.isoformat()
         })
-    else:
-        return jsonify({"message": "No data found"}), 404
+    return jsonify({"message": "No data found"}), 404
 
-@app.route('/api/sensor/history', methods=['GET'])
+@app.route('/api/kamar/latest', methods=['GET'])
 @token_required
-def get_sensor_history(current_user):
-    history_data = SensorData.query.order_by(SensorData.id.desc()).limit(100).all()
+def get_latest_kamar(current_user):
+    latest_data = KamarData.query.order_by(KamarData.id.desc()).first()
+    if latest_data:
+        return jsonify({
+            "id": latest_data.id,
+            "temperature": latest_data.temperature,
+            "humidity": latest_data.humidity,
+            "mq_status": latest_data.mq_status,
+            "flame_status": latest_data.flame_status,
+            "timestamp": latest_data.timestamp.isoformat()
+        })
+    return jsonify({"message": "No data found"}), 404
 
-    if history_data:
-        return jsonify([
-            {
-                "id": data.id,
-                "temperature": data.temperature,
-                "humidity": data.humidity,
-                "mq_status": data.mq_status,
-                "flame_status": data.flame_status,
-                "timestamp": data.timestamp.isoformat() if data.timestamp else None
-            }
-            for data in history_data
-        ])
-    else:
-        return jsonify({"message": "No history data found"}), 404
+@app.route('/api/ruangtamu/history', methods=['GET'])
+@token_required
+def get_ruangtamu_history(current_user):
+    data = RuangTamuData.query.order_by(RuangTamuData.id.desc()).limit(100).all()
+    return jsonify([
+        {
+            "id": d.id,
+            "temperature": d.temperature,
+            "humidity": d.humidity,
+            "mq_status": d.mq_status,
+            "flame_status": d.flame_status,
+            "timestamp": d.timestamp.isoformat()
+        } for d in data
+    ])
+
+@app.route('/api/kamar/history', methods=['GET'])
+@token_required
+def get_kamar_history(current_user):
+    data = KamarData.query.order_by(KamarData.id.desc()).limit(100).all()
+    return jsonify([
+        {
+            "id": d.id,
+            "temperature": d.temperature,
+            "humidity": d.humidity,
+            "mq_status": d.mq_status,
+            "flame_status": d.flame_status,
+            "timestamp": d.timestamp.isoformat()
+        } for d in data
+    ])
 
 if __name__ == '__main__':
     with app.app_context():
