@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models import db, User
-import re
+from models import DeviceLocation
 from datetime import datetime, timedelta, timezone
 import jwt
 from flask import current_app
@@ -11,36 +11,44 @@ auth_bp = Blueprint('auth', __name__)
 def register():
     data = request.get_json()
     
-    device_id = data.get('device_id')
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    location = data.get('location')
+    required_fields = ['device_id', 'username', 'email', 'password', 'location']
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Semua field harus diisi!"}), 400
 
-    # Validasi data tidak boleh kosong
-    if not all([device_id, username, email, password, location]):
-        return jsonify({"error": "Semua kolom harus diisi!"}), 400
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({"error": "Email sudah terdaftar"}), 400
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({"error": "Username sudah terdaftar"}), 400
 
-    # Validasi email
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-        return jsonify({"error": "Gunakan email yang valid!"}), 400
+    try:
+        user = User(
+            device_id=data['device_id'],
+            username=data['username'],
+            email=data['email'],
+            location=data['location']
+        )
+        user.set_password(data['password'])  
+        db.session.add(user)
+        db.session.flush()  
 
-    # Cek apakah email atau username sudah terdaftar
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email telah digunakan!"}), 400
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "Username telah digunakan!"}), 400
-    if User.query.filter_by(device_id=device_id).first():
-        return jsonify({"error": "Device ID telah digunakan!"}), 400
+        for i in range(1, 3):
+            device = DeviceLocation(
+                user_id=user.id,
+                device_number=i,
+                zone_name=f"Alat {i}"
+            )
+            db.session.add(device)
 
-    # Hash password sebelum disimpan
-    user = User(device_id=device_id, username=username, email=email, location=location)
-    user.set_password(password)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Registrasi berhasil",
+            "user_id": user.id
+        }), 201
 
-    db.session.add(user)
-    db.session.commit()
-
-    return jsonify({"message": "Registrasi berhasil!"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
@@ -55,13 +63,12 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if user and user.check_password(password):
-        # Generate token dengan masa berlaku 6 bulan
         token = jwt.encode(
             {
                 "user_id": user.id,
-                "exp": datetime.now(timezone.utc) + timedelta(days=180)   # 6 bulan = 180 hari
+                "exp": datetime.now(timezone.utc) + timedelta(days=180)  
             },
-            current_app.config["SECRET_KEY"],  # Secret key dari konfigurasi Flask
+            current_app.config["SECRET_KEY"],  
             algorithm="HS256"
         )
         return jsonify({

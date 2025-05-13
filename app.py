@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-from models import RuangTamuData, KamarData
+from models import RuangTamuData, KamarData 
 from datetime import datetime
 from database import create_app, db
 from models import User
@@ -7,27 +7,21 @@ from mqtt_handler import start_mqtt
 from auth import auth_bp
 from middleware import token_required
 from config import Config
+from flask_migrate import Migrate
+from location import locations_bp
 
 app = create_app()
+migrate = Migrate(app, db)
 
 with app.app_context():
     db.create_all()
 
 app.register_blueprint(auth_bp)
+app.register_blueprint(locations_bp)
 
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "API is running!"})
-
-@app.route('/api/user/profile', methods=['GET'])
-@token_required
-def get_user_profile(current_user):
-    user = User.query.filter_by(id=current_user.id).first()
-    
-    if user:
-        return jsonify(user.to_dict()), 200
-    else:
-        return jsonify({"message": "User tidak ditemukan!"}), 404
 
 @app.route('/api/ruangtamu/latest', methods=['GET'])
 @token_required
@@ -63,31 +57,27 @@ def get_latest_kamar(current_user):
 @token_required
 def get_ruangtamu_history(current_user):
     data = RuangTamuData.query.order_by(RuangTamuData.id.desc()).limit(100).all()
-    return jsonify([
-        {
-            "id": d.id,
-            "temperature": d.temperature,
-            "humidity": d.humidity,
-            "mq_status": d.mq_status,
-            "flame_status": d.flame_status,
-            "timestamp": d.timestamp.isoformat()
-        } for d in data
-    ])
+    return jsonify([{
+        "id": d.id,
+        "temperature": d.temperature,
+        "humidity": d.humidity,
+        "mq_status": d.mq_status,
+        "flame_status": d.flame_status,
+        "timestamp": d.timestamp.isoformat()
+    } for d in data])
 
 @app.route('/api/kamar/history', methods=['GET'])
 @token_required
 def get_kamar_history(current_user):
     data = KamarData.query.order_by(KamarData.id.desc()).limit(100).all()
-    return jsonify([
-        {
-            "id": d.id,
-            "temperature": d.temperature,
-            "humidity": d.humidity,
-            "mq_status": d.mq_status,
-            "flame_status": d.flame_status,
-            "timestamp": d.timestamp.isoformat()
-        } for d in data
-    ])
+    return jsonify([{
+        "id": d.id,
+        "temperature": d.temperature,
+        "humidity": d.humidity,
+        "mq_status": d.mq_status,
+        "flame_status": d.flame_status,
+        "timestamp": d.timestamp.isoformat()
+    } for d in data])
 
 if __name__ == '__main__':
     with app.app_context():
