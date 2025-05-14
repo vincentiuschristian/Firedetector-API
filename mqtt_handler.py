@@ -13,46 +13,43 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     from app import app 
-    from models import RuangTamuData, KamarData, db
+    from models import RuangTamuData, KamarData, User, db
 
     print(f"📥 Topic: {msg.topic} | Payload: {msg.payload.decode()}")
 
     try:
         data_json = json.loads(msg.payload.decode())
-        temperature = data_json.get("temperature")
-        humidity = data_json.get("humidity")
-        mq_status = data_json.get("MQ")
-        flame_status = data_json.get("Flame")
-
-        if temperature is None or humidity is None:
-            print("⚠️ Data tidak lengkap. Data diabaikan.")
-            return
-
+        
         with app.app_context():
+            # Dapatkan user default (misalnya user pertama)
+            default_user = User.query.first()
+            if not default_user:
+                print("⚠️ No users found in database!")
+                return
+
             if msg.topic == "fire_detector/data":
                 new_data = RuangTamuData(
-                    temperature=temperature,
-                    humidity=humidity,
-                    mq_status=mq_status,
-                    flame_status=flame_status
+                    user_id=default_user.id,  # Selalu sertakan user_id
+                    temperature=data_json.get("temperature"),
+                    humidity=data_json.get("humidity"),
+                    mq_status=data_json.get("MQ"),
+                    flame_status=data_json.get("Flame")
                 )
                 db.session.add(new_data)
                 db.session.commit()
-                print("✅ Data berhasil disimpan ke tabel: ruang_tamu")
+                print(f"✅ Data saved to ruang_tamu for user {default_user.id}")
 
             elif msg.topic == "fire_detector/data2":
                 new_data = KamarData(
-                    temperature=temperature,
-                    humidity=humidity,
-                    mq_status=mq_status,
-                    flame_status=flame_status
+                    user_id=default_user.id,
+                    temperature=data_json.get("temperature"),
+                    humidity=data_json.get("humidity"),
+                    mq_status=data_json.get("MQ"),
+                    flame_status=data_json.get("Flame")
                 )
                 db.session.add(new_data)
                 db.session.commit()
-                print("✅ Data berhasil disimpan ke tabel: kamar")
-
-            else:
-                print(f"⚠️ Topik tidak dikenali: {msg.topic}. Data diabaikan.")
+                print(f"✅ Data saved to kamar for user {default_user.id}")
 
     except Exception as e:
         print(f"❌ Error processing MQTT message: {e}")

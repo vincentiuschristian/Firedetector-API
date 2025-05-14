@@ -8,32 +8,40 @@ from database import db
 class RuangTamuData(db.Model):
     __tablename__ = 'ruang_tamu'
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) 
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
     mq_status = db.Column(db.String(50))
     flame_status = db.Column(db.String(50))
     timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    
+    user = db.relationship('User', backref=db.backref('ruang_tamu_data', lazy='dynamic'))
 
 class KamarData(db.Model):
     __tablename__ = 'kamar'
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) 
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
     mq_status = db.Column(db.String(50))
     flame_status = db.Column(db.String(50))
     timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    
+    user = db.relationship('User', backref=db.backref('kamar_data', lazy='dynamic'))
 
 class User(db.Model):
     __tablename__ = 'user'
     
     id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.String(100), unique=True, nullable=False)
+    device_id = db.Column(db.String(100), unique=True, nullable=True) 
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    location = db.Column(db.String(255), nullable=False)
+    location = db.Column(db.String(255), nullable=True)  
     token = db.Column(db.String(500), nullable=True)
-    
+    is_firefighter = db.Column(db.Boolean, default=False)  
+    firefighter_id = db.Column(db.String(20), unique=True, nullable=True) 
+
     # Relasi ke DeviceLocation
     devices = db.relationship('DeviceLocation', back_populates='user', cascade='all, delete-orphan')
 
