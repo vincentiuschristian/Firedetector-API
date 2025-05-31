@@ -23,9 +23,15 @@ def home():
 @app.route('/api/ruangtamu/latest', methods=['GET'])
 @token_required_user
 def get_latest_ruangtamu(current_user):
-    latest_data = RuangTamuData.query.order_by(RuangTamuData.timestamp.desc()).first()
-    
-    if latest_data:
+    try:
+        latest_data = RuangTamuData.query.order_by(RuangTamuData.timestamp.desc()).first()
+        
+        if not latest_data:
+            return jsonify({
+                "error": "Data not found",
+                "message": "Belum ada data sensor yang tercatat"
+            }), 404
+            
         return jsonify({
             "id": latest_data.id,
             "temperature": latest_data.temperature,
@@ -34,14 +40,25 @@ def get_latest_ruangtamu(current_user):
             "flame_status": latest_data.flame_status,
             "timestamp": latest_data.timestamp.isoformat()
         })
-    return jsonify({"message": "No data found"}), 404
+    except Exception as e:
+        return jsonify({
+            "error": "Server error",
+            "message": "Gagal mengambil data sensor terbaru",
+            "details": str(e)
+        }), 500
 
 @app.route('/api/kamar/latest', methods=['GET'])
 @token_required_user
 def get_latest_kamar(current_user):
-    latest_data = KamarData.query.order_by(KamarData.timestamp.desc()).first()
-    
-    if latest_data:
+    try:
+        latest_data = KamarData.query.order_by(KamarData.timestamp.desc()).first()
+        
+        if not latest_data:
+            return jsonify({
+                "error": "Data not found", 
+                "message": "Belum ada data sensor yang tercatat"
+            }), 404
+            
         return jsonify({
             "id": latest_data.id,
             "temperature": latest_data.temperature,
@@ -50,43 +67,71 @@ def get_latest_kamar(current_user):
             "flame_status": latest_data.flame_status,
             "timestamp": latest_data.timestamp.isoformat()
         })
-    return jsonify({"message": "No data found"}), 404
+    except Exception as e:
+        return jsonify({
+            "error": "Server error",
+            "message": "Gagal mengambil data sensor terbaru",
+            "details": str(e)
+        }), 500
 
 @app.route('/api/ruangtamu/history', methods=['GET'])
 @token_required_user
 def get_ruangtamu_history(current_user):
-    data = RuangTamuData.query.order_by(
-        RuangTamuData.timestamp.desc()
-    ).limit(100).all()
-    
-    if not data:
-        return jsonify({"message": "No data found"}), 404
-    
-    return jsonify([{
-        "id": d.id,
-        "user_id": d.user_id,
-        "temperature": d.temperature,
-        "humidity": d.humidity,
-        "mq_status": d.mq_status,
-        "flame_status": d.flame_status,
-        "timestamp": d.timestamp.isoformat()
-    } for d in data])
+    try:
+        data = RuangTamuData.query.order_by(
+            RuangTamuData.timestamp.desc()
+        ).limit(100).all()
+        
+        if not data:
+            return jsonify({
+                "error": "Data not found",
+                "message": "Belum ada riwayat sensor yang tercatat"
+            }), 404
+        
+        return jsonify([{
+            "id": d.id,
+            "user_id": d.user_id,
+            "temperature": d.temperature,
+            "humidity": d.humidity,
+            "mq_status": d.mq_status,
+            "flame_status": d.flame_status,
+            "timestamp": d.timestamp.isoformat()
+        } for d in data])
+    except Exception as e:
+        return jsonify({
+            "error": "Server error",
+            "message": "Gagal mengambil riwayat sensor",
+            "details": str(e)
+        }), 500
 
 @app.route('/api/kamar/history', methods=['GET'])
 @token_required_user
 def get_kamar_history(current_user):
-    data = KamarData.query.order_by(
-        KamarData.timestamp.desc()
-    ).limit(100).all()
-    
-    return jsonify([{
-        "id": d.id,
-        "temperature": d.temperature,
-        "humidity": d.humidity,
-        "mq_status": d.mq_status,
-        "flame_status": d.flame_status,
-        "timestamp": d.timestamp.isoformat()
-    } for d in data])
+    try:
+        data = KamarData.query.order_by(
+            KamarData.timestamp.desc()
+        ).limit(100).all()
+        
+        if not data:
+            return jsonify({
+                "error": "Data not found",
+                "message": "Belum ada riwayat sensor yang tercatat"
+            }), 404
+            
+        return jsonify([{
+            "id": d.id,
+            "temperature": d.temperature,
+            "humidity": d.humidity,
+            "mq_status": d.mq_status,
+            "flame_status": d.flame_status,
+            "timestamp": d.timestamp.isoformat()
+        } for d in data])
+    except Exception as e:
+        return jsonify({
+            "error": "Server error",
+            "message": "Gagal mengambil riwayat sensor",
+            "details": str(e)
+        }), 500
 
 if __name__ == '__main__':
     with app.app_context():

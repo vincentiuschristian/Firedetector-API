@@ -20,15 +20,32 @@ def get_user_profile(current_user):
 @auth_bp.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
+    if not data:
+        return jsonify({
+            "error": "Invalid request",
+            "message": "Request harus dalam format JSON"
+        }), 400
     
     required_fields = ['device_id', 'username', 'email', 'password', 'location']
-    if not all(field in data for field in required_fields):
-        return jsonify({"error": "All fields are required!"}), 400
+    missing_fields = [field for field in required_fields if field not in data]
+    
+    if missing_fields:
+        return jsonify({
+            "error": "Validation error",
+            "message": f"Field berikut harus diisi: {', '.join(missing_fields)}"
+        }), 400
 
     if User.query.filter_by(email=data['email']).first():
-        return jsonify({"error": "Email already registered"}), 400
+        return jsonify({
+            "error": "Duplicate email",
+            "message": "Email sudah terdaftar"
+        }), 409
+        
     if User.query.filter_by(username=data['username']).first():
-        return jsonify({"error": "Username already taken"}), 400
+        return jsonify({
+            "error": "Duplicate username",
+            "message": "Username sudah digunakan"
+        }), 409
 
     try:
         user = User(
@@ -36,7 +53,7 @@ def register():
             username=data['username'],
             email=data['email'],
             location=data['location'],
-            is_firefighter=False  # Default false untuk user biasa
+            is_firefighter=False
         )
         user.set_password(data['password'])
         db.session.add(user)
@@ -54,28 +71,46 @@ def register():
         db.session.commit()
         
         return jsonify({
-            "message": "Registration successful",
-            "user_id": user.id,
-            "username": user.username
+            "message": "Registrasi berhasil",
+            "data": {
+                "user_id": user.id,
+                "username": user.username
+            }
         }), 201
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": "Registration failed",
+            "message": f"Gagal melakukan registrasi: {str(e)}"
+        }), 500
+
 
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
+    if not data:
+        return jsonify({
+            "error": "Invalid request",
+            "message": "Request harus dalam format JSON"
+        }), 400
+
     email = data.get('email')
     password = data.get('password')
 
     if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
+        return jsonify({
+            "error": "Validation error",
+            "message": "Email dan password harus diisi"
+        }), 400
 
     user = User.query.filter_by(email=email).first()
 
     if not user or not user.check_password(password):
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({
+            "error": "Authentication failed",
+            "message": "Email atau password salah"
+        }), 401
 
     try:
         token_payload = {
@@ -107,7 +142,10 @@ def login():
         }), 200
 
     except Exception as e:
-        return jsonify({"error": f"Login failed: {str(e)}"}), 500
+        return jsonify({
+            "error": "Server error",
+            "message": f"Gagal memproses login: {str(e)}"
+        }), 500
 
 @auth_bp.route('/api/logout', methods=['POST'])
 def logout():

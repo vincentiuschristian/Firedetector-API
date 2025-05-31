@@ -42,15 +42,12 @@ class User(db.Model):
     is_firefighter = db.Column(db.Boolean, default=False)  
     firefighter_id = db.Column(db.String(20), unique=True, nullable=True) 
 
-    # Relasi ke DeviceLocation
     devices = db.relationship('DeviceLocation', back_populates='user', cascade='all, delete-orphan')
 
-    # Method untuk set password
     def set_password(self, password):
         """Membuat password hash dari password plaintext"""
         self.password_hash = generate_password_hash(password, method='scrypt')
 
-    # Method untuk verifikasi password
     def check_password(self, password):
         """Memverifikasi password terhadap hash yang tersimpan"""
         return check_password_hash(self.password_hash, password)
